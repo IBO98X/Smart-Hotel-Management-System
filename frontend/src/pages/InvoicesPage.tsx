@@ -2105,7 +2105,7 @@ const InvoicesPage = () => {
                           {dc.usageLimit && (
                             <Typography
                               variant="caption"
-                              color="text.disabled"
+                              color="#15803d"
                               fontSize="0.62rem"
                               sx={{ whiteSpace: "nowrap" }}
                             >
