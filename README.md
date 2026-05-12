@@ -3,6 +3,7 @@
 <img src="https://img.shields.io/badge/MERN-Stack-00D4AA?style=for-the-badge&logo=mongodb&logoColor=white" />
 <img src="https://img.shields.io/badge/TypeScript-Powered-3178C6?style=for-the-badge&logo=typescript&logoColor=white" />
 <img src="https://img.shields.io/badge/AI-Integrated-FF6B35?style=for-the-badge&logo=google&logoColor=white" />
+<img src="https://img.shields.io/badge/Version-2.0-brightgreen?style=for-the-badge" />
 <img src="https://img.shields.io/badge/University_of_Sulaimani-2026-8B0000?style=for-the-badge" />
 
 <br /><br />
@@ -24,7 +25,7 @@
 
 The **Smart Hotel Management System** is a comprehensive full-stack web application designed to centralize and automate the daily operations of a hotel. It transitions hotel administration from fragmented, manual processes to a modern, data-driven platform — reducing human error, improving operational efficiency, and empowering staff with AI-assisted support.
 
-The system was developed over multiple Agile sprints, with the core booking engine built and tested before integrating more advanced features such as role-based access control, dynamic invoicing, and an AI-powered chatbot.
+The system was developed over multiple Agile sprints, with the core booking engine built and tested before integrating more advanced features such as role-based access control, dynamic invoicing, discount management, and an AI-powered chatbot.
 
 ### 🎯 The Problem It Solves
 
@@ -34,6 +35,39 @@ The system was developed over multiple Agile sprints, with the core booking engi
 | Fragmented guest & financial data | Centralized MongoDB database with structured collections |
 | No real-time operational insights | Live dashboard with KPIs, occupancy charts & daily summaries |
 | Staff needing supervisor help for policy queries | Role-aware AI chatbot with live system context |
+| No promotional pricing support | Full discount code system with role-based apply/remove permissions |
+
+---
+
+## 🆕 What's New in v2.0
+
+### 🏷️ Discount Management System
+- Added a dedicated **Discount Management page** for admins and managers
+- Supports two discount types: **percentage-based** and **fixed-amount**
+- Each code is configurable with validity period, usage limits, minimum booking amount, and maximum discount cap
+- Discount codes can be created, edited, activated, deactivated, and deleted with real-time usage tracking
+- Discounts can be applied to invoices at creation time or post-creation
+- Receptionists can only apply discounts from a pre-approved active list and cannot remove them once applied
+- A confirmation dialog with an irreversibility warning is shown to receptionists before applying a discount
+- Discount amount is always clamped to the invoice subtotal — total can never go negative
+
+### 🐛 Bug Fixes
+- Tax is now correctly calculated **after** the discount is deducted, not before
+- Fixed discount dialog not reopening the selection view after removal
+- Fixed input fields losing focus on every keystroke in the Discount Form
+- Fixed role detection that was preventing discount UI elements from rendering correctly
+
+### 🤖 Chatbot Enhancement
+- Added support for **two AI models**: Gemma 4 (31B) as default and Gemini 2.5 Flash as a faster alternative
+- Staff can switch between models per request based on their needs
+- Automatic fallback to Gemma 31B if an unrecognized model is provided
+
+### 🎨 UI Improvements
+- Added a **Discount column** to the invoice table showing the applied code and savings inline
+- Original price shown with strikethrough when a discount is applied
+- Receptionist discount dialog shows available codes as **clickable cards** instead of a text input
+- Revenue stat cards are now hidden from receptionists
+- Minor spacing, color, and consistency improvements across invoice and discount interfaces
 
 ---
 
@@ -44,13 +78,14 @@ The system was developed over multiple Agile sprints, with the core booking engi
 - **🛏️ Room Management** — Full CRUD for rooms and room types, including pricing, amenities, capacity, and live status tracking (`Available`, `Occupied`, `Dirty`, `Maintenance`)
 - **📅 Reservations** — Multi-step booking wizard with date conflict detection, guest linking, and status lifecycle management
 - **👥 Guest Management** — Guest profiles with booking history, contact details, and ID records
-- **🧾 Invoicing & Billing** — Automated invoice generation with room charges, itemized services, tax calculation, and payment status tracking
+- **🧾 Invoicing & Billing** — Automated invoice generation with room charges, itemized services, tax calculation, discount application, and payment status tracking
+- **🏷️ Discount Management** — Full promotional code system with percentage and fixed-amount types, usage tracking, validity windows, and role-based permissions
 - **🛎️ Services** — Manage hotel amenities (spa, dining, laundry, etc.) with taxable/non-taxable flags
 - **👤 User Management** — Staff accounts with role-based access control (Admin, Manager, Receptionist, Housekeeping)
 - **⚙️ Settings** — Hotel profile configuration, tax rates, and currency settings
 
 ### Highlights
-- 🤖 **AI-Powered Chatbot** — Context-aware assistant with role-based data access, multi-turn memory, and predictive insights
+- 🤖 **AI-Powered Chatbot** — Context-aware assistant with role-based data access, multi-turn memory, dual AI model support, and predictive insights
 - 📱 **Fully Responsive** — Every page is optimized for desktop and mobile
 - 🔒 **JWT Authentication** — Secure, token-based session management across all endpoints
 - 🌗 **Light & Dark Themes** — System-wide theme support
@@ -88,7 +123,7 @@ The system follows a **decoupled client–server architecture** where the fronte
 | **Frontend** | React.js, TypeScript, Vite, MUI (Material UI) |
 | **Backend** | Node.js, Express.js, TypeScript |
 | **Database** | MongoDB, Mongoose ODM, MongoDB Atlas |
-| **AI / Chatbot** | Google Gemma 4 (31B) via `@google/generative-ai` SDK |
+| **AI / Chatbot** | Google Gemma 4 (31B) · Gemini 2.5 Flash via `@google/generative-ai` SDK |
 | **Auth** | JWT (JSON Web Tokens), bcrypt password hashing |
 | **Dev Tools** | Postman, Draw.io, Figma, GitHub, TickTick |
 
@@ -122,10 +157,10 @@ Invoice ────── usedServices[] ──── Service (N:M via embedded
 | `Guest` | idNumber (unique), firstName, lastName, email, phoneNumber, bookingCount |
 | `Booking` | guest (ref), room (ref), checkIn/OutDate, status, adults, children |
 | `Service` | name (unique), price, isTaxable, category |
-| `Invoice` | booking (ref), createdBy (ref), usedServices[], totalAmountDue, paymentStatus |
-| `Hotel` | name, address, taxRate, currency |
+| `Invoice` | booking (ref), createdBy (ref), usedServices[], appliedDiscount, subtotal, discountAmount, taxableAmount, totalAmountDue, paymentStatus |
+| `Hotel` | name, address, taxRate, currency, discountCodes[] |
 
-> **Design decision:** Invoice totals (`totalRoomCharge`, `taxAmount`, `totalAmountDue`) are stored as computed snapshots at creation time — ensuring historical accuracy even if room prices change later.
+> **Design decision:** Invoice totals (`totalRoomCharge`, `taxAmount`, `discountAmount`, `totalAmountDue`) are stored as computed snapshots at creation time — ensuring historical accuracy even if room prices or discount codes change later.
 
 ---
 
@@ -166,8 +201,8 @@ JSON response ──► React frontend
 | **Housekeeping** | Room statuses and today's snapshot only |
 
 ### Key Technical Details
-- **Model:** Google Gemma 4 (31B instruction-tuned)
-- **Memory:** Per-session conversation history stored server-side in a `Map<sessionId, Content[]>`
+- **Models:** Google Gemma 4 (31B) — default · Gemini 2.5 Flash — fast alternative
+- **Memory:** Per-session conversation history stored server-side in a `Map<sessionId, Content[]>` (max 20 turns)
 - **Security:** API key stored server-side only, never exposed to the client
 - **Reliability:** Retry loop (max 3 attempts) with intelligent backoff on HTTP 429
 - **Anti-hallucination:** Strict system prompt rules — the model is instructed to only use data present in the injected context
@@ -184,8 +219,11 @@ JSON response ──► React frontend
 | Guests | ✅ | ✅ | ✅ | ❌ |
 | Services | ✅ | ✅ | ✅ | ❌ |
 | Invoices | ✅ | ✅ | ✅ | ❌ |
+| Apply Discount to Invoice | ✅ | ✅ | ✅ | ❌ |
+| Remove Discount from Invoice | ✅ | ✅ | ❌ | ❌ |
+| Discount Management Page | ✅ | ✅ | ❌ | ❌ |
 | User Management | ✅ | ✅ | ❌ | ❌ |
-| Hotel Info | ✅ | ❌ | ❌ | ❌ |
+| Hotel Settings | ✅ | ❌ | ❌ | ❌ |
 | Tax Settings | ✅ | ❌ | ❌ | ❌ |
 
 ---
@@ -216,6 +254,29 @@ All endpoints require JWT authentication **except**: `POST /auth/login`, `POST /
 | `PUT` | `/bookings/:id` | Update booking |
 | `DELETE` | `/bookings/:id` | Delete booking |
 
+### Hotel & Discounts — `/api/hotel`
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/hotel` | Get hotel information |
+| `POST` | `/hotel` | Create hotel settings |
+| `PUT` | `/hotel` | Update hotel information |
+| `POST` | `/hotel/discounts` | Create a new discount code |
+| `PUT` | `/hotel/discounts/:code` | Update an existing discount code |
+| `DELETE` | `/hotel/discounts/:code` | Delete a discount code |
+| `POST` | `/hotel/discounts/:code/validate` | Validate a discount code against a booking amount |
+
+### Invoices — `/api/invoices`
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/invoices` | Get all invoices |
+| `GET` | `/invoices/:id` | Get invoice by ID |
+| `GET` | `/invoices/booking/:bookingId` | Get invoice by booking ID |
+| `POST` | `/invoices` | Create invoice for a booking |
+| `PATCH` | `/invoices/:id/payment` | Update payment status and method |
+| `PATCH` | `/invoices/:id/services` | Add a service to an invoice |
+| `PATCH` | `/invoices/:id/discount` | Apply a discount code to an invoice |
+| `DELETE` | `/invoices/:id/discount` | Remove an applied discount from an invoice |
+
 ### Other Modules
 | Module | Base Path | Operations |
 |---|---|---|
@@ -223,8 +284,6 @@ All endpoints require JWT authentication **except**: `POST /auth/login`, `POST /
 | Room Types | `/api/room-types` | Full CRUD |
 | Guests | `/api/guests` | Full CRUD |
 | Services | `/api/services` | Full CRUD |
-| Invoices | `/api/invoices` | GET, POST, PATCH |
-| Hotel | `/api/hotel` | GET, POST, PUT |
 | Dashboard | `/api/dashboard` | GET (aggregated KPIs) |
 | Chatbot | `/api/chat` | `POST /chat` · `POST /chat/clear` |
 
@@ -284,7 +343,8 @@ On first run, use the signup endpoint or seed script to create the initial Admin
 | Dashboard | KPI cards + room distribution chart | Stacked card layout |
 | All Rooms | Grid view with status badges | Single-column scroll |
 | Reservations | Tabular list with filters | Card-based list |
-| Invoices | Financial summary + table | Compact card view |
+| Invoices | Financial summary + discount column + table | Compact card view |
+| Discount Management | Code cards with usage tracking | Single-column grid |
 | Chatbot | Floating overlay panel | Full-screen modal |
 
 > All pages support both **dark mode** (default) and **light mode**, toggled via the Settings icon in the top navigation bar.
@@ -299,6 +359,24 @@ On first run, use the signup endpoint or seed script to create the initial Admin
 - [ ] **Microservices Migration** — Decompose the monolith into independently deployable services (auth, reservations, billing, notifications)
 - [ ] **Real-Time Notifications** — WebSocket (Socket.IO) push alerts for reservations, check-outs, and maintenance requests
 - [ ] **Load Testing & Performance Hardening** — Apache JMeter / k6 benchmarking + Redis caching + compound indexing
+
+---
+
+## 📋 Changelog
+
+### v2.0 — May 2026
+- Added full Discount Management System with role-based permissions
+- Added dual AI model support for the chatbot (Gemma 4 31B + Gemini 2.5 Flash)
+- Fixed tax calculation order (discount applied before tax)
+- Fixed Discount Form input focus loss bug
+- Fixed role detection for discount UI rendering
+- UI improvements across invoice and discount interfaces
+
+### v1.0 — Initial Release
+- Core hotel management modules: rooms, bookings, guests, invoices, services
+- Role-based access control with JWT authentication
+- AI chatbot with role-aware context injection
+- Responsive design with light and dark theme support
 
 ---
 
